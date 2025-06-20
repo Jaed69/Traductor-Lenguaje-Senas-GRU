@@ -1,0 +1,88 @@
+# Traductor de Lenguaje de Señas Dinámico en Tiempo Real 🤟
+
+[![Python](https://img.shields.io/badge/Python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Este proyecto es una aplicación de Visión por Computadora que traduce señas dinámicas del Lenguaje de Señas Americano (ASL) a texto en tiempo real. Utiliza la librería MediaPipe de Google para la detección precisa de los puntos de la mano y una Red Neuronal Recurrente (GRU) para interpretar secuencias de movimiento, permitiendo el reconocimiento de gestos complejos más allá de letras estáticas.
+
+*(Aquí puedes insertar un GIF o una captura de pantalla de tu proyecto en acción)*
+
+![Demo del Proyecto](https://via.placeholder.com/600x400.png?text=Inserta+un+GIF+o+Screenshot+aquí)
+
+## ✨ Características Principales
+
+- **Detección en Tiempo Real:** Captura y procesa el video de la cámara web con baja latencia.
+- **Reconocimiento de Señas Dinámicas:** A diferencia de modelos que solo ven imágenes estáticas, la arquitectura GRU analiza la secuencia de movimientos para interpretar gestos como las letras 'J', 'Z' o palabras cortas.
+- **Extensible:** El sistema está diseñado para que se puedan añadir nuevas señas fácilmente, simplemente recolectando nuevos datos de entrenamiento.
+- **Arquitectura Modular:** El código está organizado en clases siguiendo principios de POO para la recolección de datos, el entrenamiento y la inferencia, facilitando su mantenimiento y escalabilidad.
+
+## 🛠️ Tecnologías Utilizadas
+
+- **Lenguaje:** Python 3.9
+- **Framework de Deep Learning:** TensorFlow / Keras
+- **Visión por Computadora:** OpenCV, MediaPipe
+- **Librerías de Datos:** NumPy, Scikit-learn, Pandas
+
+## 🚀 Instalación y Configuración
+
+Sigue estos pasos para poner el proyecto en funcionamiento en tu máquina local.
+
+1.  **Clona el repositorio:**
+    ```bash
+    git clone [https://github.com/tu-usuario/tu-repositorio.git](https://github.com/tu-usuario/tu-repositorio.git)
+    cd tu-repositorio
+    ```
+
+2.  **Crea y activa un entorno virtual** (se recomienda Conda):
+    ```bash
+    conda create -n traductor_senas python=3.9
+    conda activate traductor_senas
+    ```
+
+3.  **Instala las dependencias:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+## 📋 Modo de Uso
+
+El proyecto funciona en tres etapas:
+
+### 1. Recolección de Datos
+
+Ejecuta el script para capturar tus propias secuencias de señas. El programa te guiará para grabar múltiples ejemplos para cada seña que definas.
+
+```bash
+python data_collector_sequence.py
+```
+
+### 2. Entrenamiento del Modelo
+
+Una vez que tengas los datos, entrena el modelo GRU. Este script procesará las secuencias, construirá la red neuronal y la entrenará, guardando el modelo final en la carpeta `data`.
+
+```bash
+python model_trainer_sequence.py
+```
+
+### 3. Ejecutar el Traductor
+
+¡La parte divertida! Ejecuta este script para iniciar la aplicación. Usará el modelo que acabas de entrenar para traducir las señas que hagas frente a la cámara.
+
+```bash
+python real_time_translator_sequence.py
+```
+
+## 🔮 Futuras Mejoras
+
+- [ ] Añadir un vocabulario más extenso de señas, incluyendo palabras completas.
+- [ ] Desarrollar una interfaz gráfica de usuario (GUI) con Tkinter o PyQt para mostrar el texto traducido de forma más amigable.
+- [ ] Implementar la capacidad de construir frases completas.
+- [ ] Optimizar el modelo para un rendimiento aún más rápido en dispositivos con menos recursos.
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
+
+## 👤 Autor
+
+* **[Tu Nombre]** - [tu-usuario-de-github](https://github.com/tu-usuario)

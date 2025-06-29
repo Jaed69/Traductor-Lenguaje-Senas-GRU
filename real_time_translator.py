@@ -4,20 +4,22 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import tensorflow as tf
+# from tensorflow import keras
 from collections import deque
 import os
+from tensorflow.keras.models import load_model
 
 class RealTimeSequenceTranslator:
-    def __init__(self, model_path='data/sign_model_gru.h5', signs_path='data/signs.npy'):
-        self.model = tf.keras.models.load_model(model_path)
+    def __init__(self, model_path='data/sign_model_gru.h5', signs_path='data/label_encoder.npy'):
+        self.model = load_model(model_path)
         self.signs = np.load(signs_path)
-        self.sequence_length = 30
+        self.sequence_length = 50  # Cambiado de 30 a 50 para coincidir con el entrenamiento
         self.sequence_buffer = deque(maxlen=self.sequence_length)
         self.prediction_threshold = 0.7 # Confianza mínima para mostrar predicción
         
         # ... (inicialización de MediaPipe y OpenCV como antes) ...
         self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(max_num_hands=1, min_detection_confidence=0.7)
+        self.hands = self.mp_hands.Hands(max_num_hands=2, min_detection_confidence=0.7)
         self.mp_draw = mp.solutions.drawing_utils
         self.cap = cv2.VideoCapture(0)
 
@@ -37,11 +39,25 @@ class RealTimeSequenceTranslator:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = self.hands.process(frame_rgb)
             
-            current_landmarks = np.zeros(21 * 3) # Frame por defecto (sin mano)
+            current_landmarks = np.zeros(2 * 21 * 3) # Frame por defecto (sin manos)
             if results.multi_hand_landmarks:
-                hand_landmarks = results.multi_hand_landmarks[0]
-                self.mp_draw.draw_landmarks(frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
-                current_landmarks = self._extract_landmarks(hand_landmarks)
+                handedness = []
+                if results.multi_handedness:
+                    for h in results.multi_handedness:
+                        handedness.append(h.classification[0].label)
+                for idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
+                    self.mp_draw.draw_landmarks(frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
+                    lm = self._extract_landmarks(hand_landmarks)
+                    if handedness:
+                        if handedness[idx] == 'Left':
+                            current_landmarks[0:63] = lm
+                        else:
+                            current_landmarks[63:126] = lm
+                    else:
+                        if idx == 0:
+                            current_landmarks[0:63] = lm
+                        else:
+                            current_landmarks[63:126] = lm
 
             self.sequence_buffer.append(current_landmarks)
             

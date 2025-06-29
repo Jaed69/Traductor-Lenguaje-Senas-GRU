@@ -1,0 +1,22 @@
+# Entornos virtuales de Python
+/venv
+/.venv
+/env
+/.env
+/traductor_senas/
+
+# Archivos de caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de datos y modelos generados (¡MUY IMPORTANTE!)
+# No subimos los datos crudos ni los modelos porque son pesados y se pueden regenerar.
+/data/sequences/
+/data/*.h5
+/data/*.npy
+/data/*.pkl
+
+# Otros
+.DS_Store

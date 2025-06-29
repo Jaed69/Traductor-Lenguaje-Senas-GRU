@@ -5,6 +5,8 @@ import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+
+from tensorflow.keras.preprocessing.sequence import pad_sequences 
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, LSTM, GRU, Dense, Dropout
@@ -19,8 +21,8 @@ class SequenceModelTrainer:
         self.signs = np.array([name for name in os.listdir(data_path) if os.path.isdir(os.path.join(data_path, name))])
         self.label_encoder = LabelEncoder()
         self.model_type = model_type
-        self.sequence_length = 30
-        self.num_features = 21 * 3
+        self.sequence_length = 50
+        self.num_features = 21 * 3 * 2
 
     def load_data(self):
         sequences, labels = [], []
@@ -36,7 +38,7 @@ class SequenceModelTrainer:
                 # Transformamos la etiqueta a número
                 labels.append(self.label_encoder.transform([sign])[0])
         
-        X = np.array(sequences)
+        X = pad_sequences(sequences, maxlen=self.sequence_length, padding='post', truncating='post', dtype='float32')
         
         # ==========================================================
         # !! LA CORRECCIÓN PRINCIPAL ESTÁ AQUÍ !!

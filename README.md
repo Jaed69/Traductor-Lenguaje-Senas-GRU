@@ -53,7 +53,7 @@ El proyecto funciona en tres etapas:
 Ejecuta el script para capturar tus propias secuencias de señas. El programa te guiará para grabar múltiples ejemplos para cada seña que definas.
 
 ```bash
-python data_collector_sequence.py
+python data_collector.py
 ```
 
 ### 2. Entrenamiento del Modelo
@@ -69,7 +69,13 @@ python model_trainer_sequence.py
 ¡La parte divertida! Ejecuta este script para iniciar la aplicación. Usará el modelo que acabas de entrenar para traducir las señas que hagas frente a la cámara.
 
 ```bash
-python real_time_translator_sequence.py
+python real_time_translator.py
+```
+
+También puedes ejecutar directamente:
+
+```bash
+python main.py
 ```
 
 ## 🔮 Futuras Mejoras

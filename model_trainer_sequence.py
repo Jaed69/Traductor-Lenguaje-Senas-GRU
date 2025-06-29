@@ -12,17 +12,25 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, LSTM, GRU, Dense, Dropout
 
 class SequenceModelTrainer:
-    def __init__(self, data_path='data/sequences', model_type='gru'):
+    def __init__(self, data_path='data/sequences', model_type='gru', use_merged_data=False):
         self.data_path = data_path
+        self.use_merged_data = use_merged_data
+        
         # Verifica que el directorio de datos exista
         if not os.path.exists(self.data_path):
             raise FileNotFoundError(f"El directorio de datos no existe: {self.data_path}. Por favor, ejecuta primero el script de recolección.")
             
         self.signs = np.array([name for name in os.listdir(data_path) if os.path.isdir(os.path.join(data_path, name))])
+        
+        if len(self.signs) == 0:
+            raise ValueError(f"No se encontraron señas en {data_path}. Asegúrate de haber recolectado datos primero.")
+        
         self.label_encoder = LabelEncoder()
         self.model_type = model_type
         self.sequence_length = 50
         self.num_features = 21 * 3 * 2
+        
+        print(f"🔍 Encontradas {len(self.signs)} señas: {', '.join(self.signs)}")
 
     def load_data(self):
         sequences, labels = [], []
@@ -70,7 +78,7 @@ class SequenceModelTrainer:
         model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
         return model
 
-    def train(self):
+    def train(self, epochs=50):
         X, y = self.load_data()
         
         if X.shape[0] == 0:
@@ -85,15 +93,52 @@ class SequenceModelTrainer:
         print("Resumen del modelo:")
         print(model.summary())
         
-        print("\nIniciando entrenamiento...")
-        history = model.fit(X_train, y_train, epochs=50, validation_data=(X_test, y_test), batch_size=32)
+        print(f"\nIniciando entrenamiento con {epochs} épocas...")
+        print(f"📊 Datos de entrenamiento: {X_train.shape[0]} muestras")
+        print(f"📊 Datos de prueba: {X_test.shape[0]} muestras")
+        
+        history = model.fit(X_train, y_train, epochs=epochs, validation_data=(X_test, y_test), batch_size=32)
+        
+        # Evaluar el modelo
+        test_loss, test_accuracy = model.evaluate(X_test, y_test, verbose=0)
+        print(f"\n📈 Precisión en datos de prueba: {test_accuracy:.3f}")
+        print(f"📈 Pérdida en datos de prueba: {test_loss:.3f}")
         
         model.save(f'data/sign_model_{self.model_type}.h5')
         print(f"\nModelo entrenado y guardado como 'data/sign_model_{self.model_type}.h5'")
 
 if __name__ == '__main__':
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Entrenar modelo de reconocimiento de señas')
+    parser.add_argument('--data-path', default='data/sequences', help='Ruta al directorio de datos')
+    parser.add_argument('--model-type', default='gru', choices=['gru', 'lstm'], help='Tipo de modelo a entrenar')
+    parser.add_argument('--use-merged-data', action='store_true', help='Usar datos combinados de múltiples contribuidores')
+    parser.add_argument('--epochs', type=int, default=50, help='Número de épocas de entrenamiento')
+    
+    args = parser.parse_args()
+    
     try:
-        trainer = SequenceModelTrainer(model_type='gru')
-        trainer.train()
+        print("🚀 Iniciando entrenamiento del modelo...")
+        if args.use_merged_data:
+            print("📊 Usando dataset combinado con datos de múltiples contribuidores")
+        
+        trainer = SequenceModelTrainer(
+            data_path=args.data_path, 
+            model_type=args.model_type,
+            use_merged_data=args.use_merged_data
+        )
+        
+        # Modificar el método train para aceptar epochs
+        trainer.train(epochs=args.epochs)
+        
+        print("\n✅ Entrenamiento completado exitosamente!")
+        print("💡 Consejo: Ejecuta dataset_stats.py para ver estadísticas del dataset usado")
+        
     except FileNotFoundError as e:
-        print(e)
+        print(f"❌ {e}")
+        print("💡 Ejecuta primero data_collector.py para recolectar datos")
+    except ValueError as e:
+        print(f"❌ {e}")
+    except Exception as e:
+        print(f"❌ Error durante el entrenamiento: {e}")

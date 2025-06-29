@@ -46,7 +46,7 @@ Sigue estos pasos para poner el proyecto en funcionamiento en tu máquina local.
 
 ## 📋 Modo de Uso
 
-El proyecto funciona en tres etapas:
+El proyecto funciona en tres etapas principales:
 
 ### 1. Recolección de Datos
 
@@ -77,6 +77,32 @@ También puedes ejecutar directamente:
 ```bash
 python main.py
 ```
+
+## 🤝 Colaboración y Compartición de Datos
+
+Para proyectos en equipo, puedes compartir datos de entrenamiento para crear un dataset más grande y diverso:
+
+### Exportar tus datos
+```bash
+python data_exporter.py --contributor-id user_001 --contributor-name "Tu Nombre"
+```
+
+### Importar datos de otros colaboradores
+```bash
+python data_importer.py --import shared_data/user_002/
+```
+
+### Entrenar con dataset combinado
+```bash
+python model_trainer_sequence.py --use-merged-data --epochs 100
+```
+
+### Analizar estadísticas del dataset
+```bash
+python dataset_stats.py --visualizations --report dataset_report.txt
+```
+
+📖 **Consulta `DATA_SHARING.md` para más detalles sobre colaboración.**
 
 ## 🔮 Futuras Mejoras
 

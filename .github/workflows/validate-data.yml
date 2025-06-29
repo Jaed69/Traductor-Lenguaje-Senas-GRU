@@ -1,0 +1,49 @@
+name: Validate Data Contribution
+
+on:
+  pull_request:
+    paths:
+      - 'shared_data/**'
+      - 'data/**'
+
+jobs:
+  validate-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+          
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          pip install numpy scikit-learn matplotlib
+          
+      - name: Validate data quality
+        run: |
+          python dataset_stats.py --validate-only
+          
+      - name: Generate data report
+        run: |
+          python dataset_stats.py --report pr_data_report.txt
+          
+      - name: Comment PR with results
+        uses: actions/github-script@v6
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('pr_data_report.txt')) {
+              const report = fs.readFileSync('pr_data_report.txt', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '## 📊 Data Quality Report\n\n```\n' + report + '\n```'
+              });
+            }

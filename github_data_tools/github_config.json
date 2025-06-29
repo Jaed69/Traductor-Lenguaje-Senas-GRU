@@ -1,0 +1,26 @@
+{
+  "github_data_sharing": {
+    "enabled": true,
+    "setup_date": "2025-06-29 16:50:36",
+    "git_lfs_enabled": true,
+    "max_file_size_mb": 100,
+    "supported_formats": [
+      ".npy",
+      ".h5",
+      ".pkl",
+      ".zip"
+    ],
+    "quality_threshold": 5.0,
+    "auto_validation": true
+  },
+  "repository_settings": {
+    "lfs_bandwidth_limit_gb": 1,
+    "storage_limit_gb": 1,
+    "contributors_limit": 10
+  },
+  "workflows": {
+    "validate_on_pr": true,
+    "auto_release": false,
+    "quality_checks": true
+  }
+}

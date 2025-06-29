@@ -1,0 +1,18 @@
+{
+  "contributor_id": "user_001",
+  "contributor_name": "Usuario Principal",
+  "collection_date": "2025-06-29",
+  "export_date": "2025-06-29 17:11:52",
+  "total_sequences": 40,
+  "signs_included": [
+    "HOLA"
+  ],
+  "camera_specs": {
+    "resolution": "1280x720",
+    "fps": 30
+  },
+  "lighting_conditions": "regular",
+  "background": "complejo",
+  "quality_score": 10.0,
+  "notes": "a contra luz"
+}

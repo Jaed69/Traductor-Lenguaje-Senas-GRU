@@ -1,0 +1,16 @@
+{
+  "contributor_id": "user_demo",
+  "contributor_name": "Demo User",
+  "collection_date": "2025-06-29",
+  "export_date": "2025-06-29 16:30:00",
+  "total_sequences": 40,
+  "signs_included": ["HOLA"],
+  "camera_specs": {
+    "resolution": "1920x1080",
+    "fps": 30
+  },
+  "lighting_conditions": "buena",
+  "background": "uniforme",
+  "quality_score": 8.0,
+  "notes": "Dataset de demostración para GitHub data sharing"
+}

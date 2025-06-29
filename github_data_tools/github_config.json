@@ -1,7 +1,7 @@
 {
   "github_data_sharing": {
     "enabled": true,
-    "setup_date": "2025-06-29 16:50:36",
+    "setup_date": "2025-06-29 17:04:14",
     "git_lfs_enabled": true,
     "max_file_size_mb": 100,
     "supported_formats": [

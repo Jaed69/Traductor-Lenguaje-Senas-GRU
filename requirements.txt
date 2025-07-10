@@ -1,0 +1,54 @@
+# ===================================================================
+# 🚀 Proyecto LSP - Requerimientos Modernizados (Julio 2025)
+# Para la última API de Tareas de MediaPipe y Python 3.11+
+#
+# Instrucciones:
+# 1. Crea un entorno virtual: python -m venv venv
+# 2. Actívalo: source venv/bin/activate (o venv\Scripts\activate)
+# 3. Instala todo con: pip install -r requirements.txt
+# ===================================================================
+
+# -- Core ML & Visión por Computadora --
+# La base de tu proyecto.
+
+# Esencial para la nueva API de Tareas. Usamos '>=0.10.11' para obtener
+# las últimas mejoras, pero puedes fijarla a una versión más nueva si lo prefieres.
+mediapipe>=0.10.11
+
+# Indispensable para la captura de cámara y manipulación de imágenes.
+opencv-python>=4.9.0
+
+# -- Data Science & Machine Learning (Opcional si no entrenas modelos aquí) --
+# Mantén estas si tu script también pre-procesa datos o entrena.
+
+# Biblioteca fundamental para operaciones numéricas.
+numpy>=1.24.3
+
+# Útil para el pre-procesamiento de los datos recolectados.
+scikit-learn>=1.3.2
+
+# Si guardas tus modelos o datasets en formato HDF5.
+h5py>=3.9.0
+
+# -- Utilidades y Experiencia de Usuario --
+# Librerías que mejoran la interacción y la visualización.
+
+# Para visualizar datos o resultados.
+matplotlib>=3.7.5
+
+# Para mostrar barras de progreso elegantes durante la recolección.
+tqdm>=4.65.0
+
+# Para añadir color a los mensajes en la terminal.
+colorama>=0.4.6
+
+# -- NOTA SOBRE TENSORFLOW --
+# La librería 'mediapipe' ya incluye el runtime de TensorFlow Lite
+# necesario para la inferencia. NO necesitas instalar el paquete
+# completo de 'tensorflow' a menos que vayas a ENTRENAR modelos
+# en este mismo entorno. Si lo necesitas, descomenta la siguiente línea:
+# tensorflow>=2.13.0
+
+# -- Análisis de Señales para GRU Optimizado --
+# Biblioteca científica para análisis de periodicidad y autocorrelación.
+scipy>=1.11.0

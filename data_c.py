@@ -66,13 +66,11 @@ class LSPDataCollector:
         print("   • Detección de señas estáticas vs dinámicas")
         print("   • Soporte para 1 o 2 manos")
         print("   • Análisis de calidad en tiempo real")
-        print("   • 24 métricas de movimiento optimizadas para GRU")
+        print("   • 16 métricas de movimiento optimizadas para GRU")
         print("   • Metadatos completos por secuencia")
         print("   • 🧠 Optimizado para GRU Bidireccional")
         print("   • 🎯 Secuencias de 60 frames para mejor contexto temporal")
-        print("   • 📊 171 features: Manos (126) + Pose (36) + Velocidades (9)")
-        print("   • 🏃‍♂️ Tracking de hombros para expresiones corporales")
-        print("   • 💫 Ideal para GRACIAS, POR FAVOR y señas expresivas")
+        print("   • 📊 Features normalizadas para keras.GRU")
 
     def setup_mediapipe_tasks(self):
         """Inicializa los modelos de MediaPipe usando la API de Tareas."""
@@ -131,11 +129,11 @@ class LSPDataCollector:
         return normalized_landmarks.flatten()
 
     def _extract_advanced_landmarks(self, hand_results, pose_results):
-        """Extrae landmarks optimizados para GRU bidireccional con énfasis en hombros"""
-        # Inicializar arrays optimizados para GRU con más información de pose
+        """Extrae landmarks optimizados para GRU bidireccional"""
+        # Inicializar arrays optimizados para GRU
         hand_data = np.zeros(126)  # 2 manos * 63 features cada una
-        pose_data = np.zeros(36)   # 12 puntos clave * 3 coordenadas (incluyendo más hombros/torso)
-        velocity_data = np.zeros(9)  # Velocidades de manos, pose y hombros para GRU temporal
+        pose_data = np.zeros(24)   # 8 puntos clave * 3 coordenadas
+        velocity_data = np.zeros(6)  # Velocidades de manos y pose para GRU temporal
         hands_info = {'count': 0, 'handedness': [], 'confidence': []}
 
         # Procesar manos con normalización precisa y cálculo de velocidades
@@ -166,11 +164,9 @@ class LSPDataCollector:
                         velocity_data[3:6] = np.linalg.norm(normalized_landmarks[0:3] - self.prev_left_hand[0:3])
                     self.prev_left_hand = normalized_landmarks
 
-        # Procesar pose con énfasis especial en hombros y torso superior
+        # Procesar pose (solo puntos relevantes para lenguaje de señas)
         if pose_results and pose_results.pose_landmarks:
-            # Puntos clave expandidos para mejor análisis de hombros y expresiones corporales
-            # 11,12: Hombros | 13,14: Codos | 15,16: Muñecas | 23,24: Caderas | 0: Nariz | 1,2: Ojos internos
-            relevant_indices = [0, 1, 2, 11, 12, 13, 14, 15, 16, 23, 24, 7]  # 12 puntos estratégicos
+            relevant_indices = [11, 12, 13, 14, 15, 16, 23, 24]  # Puntos clave del torso y brazos
             all_pose_landmarks = pose_results.pose_landmarks[0]
             extracted_pose_landmarks = []
             
@@ -178,36 +174,19 @@ class LSPDataCollector:
                 if idx < len(all_pose_landmarks):
                     lm = all_pose_landmarks[idx]
                     extracted_pose_landmarks.extend([lm.x, lm.y, lm.z])
-                else:
-                    # Rellenar con ceros si el punto no está disponible
-                    extracted_pose_landmarks.extend([0.0, 0.0, 0.0])
             
-            if len(extracted_pose_landmarks) >= 36:  # 12 puntos * 3 coordenadas
-                pose_data = np.array(extracted_pose_landmarks[:36])
+            if len(extracted_pose_landmarks) >= 24:  # 8 puntos * 3 coordenadas
+                pose_data = np.array(extracted_pose_landmarks[:24])
                 
-                # Calcular velocidades específicas para análisis temporal mejorado
+                # Calcular velocidad de pose para información temporal
                 if hasattr(self, 'prev_pose') and self.prev_pose is not None:
-                    # Velocidad general de pose
                     pose_velocity = np.linalg.norm(pose_data - self.prev_pose)
-                    velocity_data[6] = pose_velocity
-                    
-                    # Velocidad específica de hombros (crítica para expresiones como "GRACIAS")
-                    shoulder_landmarks = pose_data[9:15]  # Hombros (indices 11,12 -> posiciones 9-14 en array)
-                    prev_shoulder_landmarks = self.prev_pose[9:15]
-                    shoulder_velocity = np.linalg.norm(shoulder_landmarks - prev_shoulder_landmarks)
-                    velocity_data[7] = shoulder_velocity
-                    
-                    # Velocidad de torso superior (cabeza + hombros)
-                    upper_body = pose_data[0:15]  # Cabeza hasta hombros
-                    prev_upper_body = self.prev_pose[0:15]
-                    upper_body_velocity = np.linalg.norm(upper_body - prev_upper_body)
-                    velocity_data[8] = upper_body_velocity
+                    velocity_data = np.append(velocity_data, pose_velocity)
                 else:
-                    velocity_data[6:9] = [0.0, 0.0, 0.0]
-                
+                    velocity_data = np.append(velocity_data, 0.0)
                 self.prev_pose = pose_data
 
-        # Combinar features optimizadas para GRU con información ampliada de pose
+        # Combinar features optimizadas para GRU
         combined_features = np.concatenate([hand_data, pose_data, velocity_data])
         
         # Aplicar normalización si está habilitada (recomendado para GRU)
@@ -217,7 +196,7 @@ class LSPDataCollector:
         return combined_features, hands_info
 
     def _normalize_features_for_gru(self, features):
-        """Normaliza features específicamente para GRU bidireccional con pose expandida"""
+        """Normaliza features específicamente para GRU bidireccional"""
         # Normalización Min-Max adaptada para GRU
         # Los GRU funcionan mejor con datos en rango [-1, 1] o [0, 1]
         features_norm = features.copy()
@@ -227,15 +206,14 @@ class LSPDataCollector:
         if np.max(np.abs(hand_features)) > 0:
             hand_features = np.tanh(hand_features * 2)  # Tanh para rango [-1, 1]
         
-        # Normalizar pose expandida (36 features: 12 puntos * 3 coordenadas)
-        pose_features = features_norm[126:162]
+        # Normalizar pose
+        pose_features = features_norm[126:150]
         if np.max(np.abs(pose_features)) > 0:
             pose_features = (pose_features - 0.5) * 2  # Rango [-1, 1]
         
         # Normalizar velocidades (importantes para contexto temporal en GRU)
-        # Ahora tenemos 9 velocidades: manos (6) + pose general + hombros + torso superior
-        velocity_features = features_norm[162:]
-        if len(velocity_features) > 0 and np.max(velocity_features) > 0:
+        velocity_features = features_norm[150:]
+        if np.max(velocity_features) > 0:
             velocity_features = np.clip(velocity_features / np.max(velocity_features), 0, 1)
         
         return np.concatenate([hand_features, pose_features, velocity_features])
@@ -380,9 +358,9 @@ class LSPDataCollector:
                     cv2.line(frame, pt1, pt2, (100, 100, 255), 2)
 
     def _display_hud(self, frame, collecting, hands_info):
-        """HUD optimizado para mostrar información relevante para GRU con tracking de hombros"""
+        """HUD optimizado para mostrar información relevante para GRU"""
         # Estado de grabación
-        status_text = "GRABANDO (GRU + Hombros)" if collecting else "PAUSADO"
+        status_text = "GRABANDO (GRU-Optimizado)" if collecting else "PAUSADO"
         status_color = (0, 0, 255) if collecting else (255, 255, 0)
         cv2.putText(frame, status_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, status_color, 2, cv2.LINE_AA)
         
@@ -392,39 +370,23 @@ class LSPDataCollector:
             hands_text += f" ({', '.join(hands_info['handedness'])})"
         cv2.putText(frame, hands_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2, cv2.LINE_AA)
         
-        # Información específica para GRU con hombros
+        # Información específica para GRU
         gru_info = [
             f"Secuencia: {self.sequence_length} frames (GRU-opt)",
-            f"Features: 171 (Manos+Pose+Velocidades)",
-            f"Pose: 12 puntos (incluye hombros)",
-            f"Velocidades: 9 (manos+pose+hombros)",
-            f"Métricas: 24 (incluye 4 de hombros)"
+            f"Features: {self.gru_optimized_features} activas",
+            f"Suavizado: {'ON' if self.temporal_smoothing else 'OFF'}",
+            f"Normalización: {'ON' if self.feature_normalization else 'OFF'}"
         ]
         
         for i, info in enumerate(gru_info):
-            cv2.putText(frame, info, (10, 90 + i*20), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.putText(frame, info, (10, 90 + i*25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
         
-        # Estado de tracking de pose/hombros
-        pose_status = "POSE: ON" if hasattr(self, 'prev_pose') and self.prev_pose is not None else "POSE: OFF"
-        pose_color = (0, 255, 0) if "ON" in pose_status else (0, 0, 255)
-        cv2.putText(frame, pose_status, (10, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.5, pose_color, 1, cv2.LINE_AA)
-        
-        # Indicadores de calidad en tiempo real
-        if collecting:
-            # Indicador de estabilidad temporal (manos)
+        # Calidad en tiempo real si está recolectando
+        if collecting and hasattr(self, 'prev_landmarks'):
+            # Indicador de estabilidad temporal
             stability_color = (0, 255, 0) if hasattr(self, 'prev_landmarks') else (0, 0, 255)
-            cv2.circle(frame, (frame.shape[1] - 80, 30), 8, stability_color, -1)
-            cv2.putText(frame, "Manos", (frame.shape[1] - 120, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-            
-            # Indicador de tracking de hombros
-            shoulder_color = (0, 255, 0) if hasattr(self, 'prev_pose') else (255, 0, 0)
-            cv2.circle(frame, (frame.shape[1] - 30, 30), 8, shoulder_color, -1)
-            cv2.putText(frame, "Hombros", (frame.shape[1] - 80, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-        
-        # Información para señas expresivas
-        expressive_signs_info = "Óptimo para: GRACIAS, POR FAVOR, expresiones corporales"
-        cv2.putText(frame, expressive_signs_info, (10, frame.shape[0] - 40), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (100, 255, 255), 1, cv2.LINE_AA)
+            cv2.circle(frame, (frame.shape[1] - 30, 30), 10, stability_color, -1)
+            cv2.putText(frame, "Estabilidad", (frame.shape[1] - 100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
         
         # Controles
         cv2.putText(frame, "ESPACIO: Iniciar/Parar | Q: Salir", (10, frame.shape[0] - 20), 
@@ -436,19 +398,19 @@ class LSPDataCollector:
         return 'unknown'
 
     def _calculate_motion_features(self, sequence_data):
-        """Calcula métricas de movimiento optimizadas para GRU bidireccional con análisis de hombros"""
+        """Calcula métricas de movimiento optimizadas para GRU bidireccional"""
         if len(sequence_data) < 5:
-            return np.zeros(24)  # Aumentado para incluir métricas de hombros
+            return np.zeros(20)  # Aumentado para métricas GRU
         
-        # Separar componentes de los datos con pose expandida
+        # Separar componentes de los datos
         hand_sequence = sequence_data[:, :126]
-        pose_sequence = sequence_data[:, 126:162] if sequence_data.shape[1] > 162 else None  # 36 features de pose
-        velocity_sequence = sequence_data[:, 162:] if sequence_data.shape[1] > 162 else None  # 9 velocidades
+        pose_sequence = sequence_data[:, 126:150] if sequence_data.shape[1] > 150 else None
+        velocity_sequence = sequence_data[:, 150:] if sequence_data.shape[1] > 150 else None
         
         # 1. Métricas básicas de movimiento de manos
         frame_movements = [np.linalg.norm(hand_sequence[i] - hand_sequence[i-1]) for i in range(1, len(hand_sequence))]
         if not frame_movements:
-            return np.zeros(24)
+            return np.zeros(20)
         
         # 2. Calcular aceleraciones y jerk (importantes para GRU temporal)
         accelerations = [abs(frame_movements[i] - frame_movements[i-1]) for i in range(1, len(frame_movements))]
@@ -470,7 +432,7 @@ class LSPDataCollector:
             np.mean(jerk_values) if jerk_values else 0  # Jerk promedio
         ]
         
-        # 4. Métricas adicionales para GRU (8 métricas existentes)
+        # 4. Métricas adicionales para GRU (8 nuevas métricas)
         additional_metrics = []
         
         # 4.1. Consistencia temporal
@@ -531,63 +493,17 @@ class LSPDataCollector:
             directional_intensity = 0.0
         additional_metrics.append(directional_intensity)
         
-        # 5. NUEVAS MÉTRICAS ESPECÍFICAS PARA HOMBROS Y POSE (4 nuevas métricas)
-        shoulder_metrics = []
+        # Combinar todas las métricas
+        all_metrics = basic_metrics + additional_metrics
         
-        if pose_sequence is not None and pose_sequence.size > 0:
-            # 5.1. Movimiento específico de hombros (crucial para "GRACIAS", "POR FAVOR")
-            # Los hombros están en las posiciones 9-14 del array de pose (índices 11,12 en MediaPipe)
-            shoulder_landmarks = pose_sequence[:, 9:15]  # 2 hombros * 3 coordenadas
-            if shoulder_landmarks.size > 0:
-                shoulder_movements = [np.linalg.norm(shoulder_landmarks[i] - shoulder_landmarks[i-1]) 
-                                    for i in range(1, len(shoulder_landmarks))]
-                shoulder_movement_avg = np.mean(shoulder_movements) if shoulder_movements else 0.0
-                shoulder_metrics.append(shoulder_movement_avg)
-                
-                # 5.2. Simetría de hombros (importante para expresiones bilaterales)
-                left_shoulder = shoulder_landmarks[:, 0:3]   # Hombro izquierdo
-                right_shoulder = shoulder_landmarks[:, 3:6]  # Hombro derecho
-                shoulder_symmetry = 1.0 - np.mean(np.abs(left_shoulder - right_shoulder)) if len(left_shoulder) > 0 else 0.0
-                shoulder_metrics.append(max(0.0, shoulder_symmetry))
-                
-                # 5.3. Coordinación hombro-mano (específica para expresiones como "GRACIAS")
-                if velocity_sequence is not None and len(velocity_sequence) > 0:
-                    # Comparar velocidad de manos con velocidad de hombros
-                    hand_velocity = np.mean(velocity_sequence[:, 0:6], axis=1) if velocity_sequence.shape[1] > 6 else np.zeros(len(velocity_sequence))
-                    shoulder_velocity = velocity_sequence[:, 7] if velocity_sequence.shape[1] > 7 else np.zeros(len(velocity_sequence))
-                    
-                    if len(hand_velocity) > 0 and len(shoulder_velocity) > 0:
-                        hand_shoulder_correlation = abs(np.corrcoef(hand_velocity, shoulder_velocity)[0, 1])
-                        hand_shoulder_correlation = hand_shoulder_correlation if not np.isnan(hand_shoulder_correlation) else 0.0
-                    else:
-                        hand_shoulder_correlation = 0.0
-                    shoulder_metrics.append(hand_shoulder_correlation)
-                else:
-                    shoulder_metrics.append(0.0)
-                
-                # 5.4. Amplitud de movimiento de torso superior (para expresiones corporales completas)
-                upper_body = pose_sequence[:, 0:15]  # Cabeza + hombros
-                if upper_body.size > 0:
-                    upper_body_range = np.max(upper_body) - np.min(upper_body)
-                    shoulder_metrics.append(upper_body_range)
-                else:
-                    shoulder_metrics.append(0.0)
-            else:
-                shoulder_metrics.extend([0.0, 0.0, 0.0, 0.0])
-        else:
-            shoulder_metrics.extend([0.0, 0.0, 0.0, 0.0])
-        
-        # Combinar todas las métricas: 12 básicas + 8 adicionales + 4 de hombros = 24 total
-        all_metrics = basic_metrics + additional_metrics + shoulder_metrics
-        
-        # Asegurar exactamente 24 métricas
-        while len(all_metrics) < 24:
+        # Asegurar exactamente 20 métricas
+        while len(all_metrics) < 20:
             all_metrics.append(0.0)
         
-        return np.array(all_metrics[:24])
+        return np.array(all_metrics[:20])
 
     def _evaluate_sequence_quality(self, sequence_data, motion_features, sign_type):
-        """Evalúa calidad de secuencia optimizada para GRU bidireccional con análisis de hombros"""
+        """Evalúa calidad de secuencia optimizada para GRU bidireccional"""
         quality_score = 100.0
         issues = []
         
@@ -600,21 +516,10 @@ class LSPDataCollector:
             quality_score -= 10
             issues.append("Algunos frames con datos faltantes")
         
-        # 2. Completeness de datos de pose (importante para expresiones con hombros)
-        pose_completeness = np.count_nonzero(np.any(sequence_data[:, 126:162] != 0, axis=1)) / len(sequence_data) if sequence_data.shape[1] > 162 else 0.0
-        if pose_completeness < 0.8:
-            quality_score -= 15
-            issues.append("Datos de pose/hombros incompletos")
-        
-        # 3. Análisis de movimiento específico por tipo de seña
+        # 2. Análisis de movimiento específico por tipo de seña
         avg_movement = motion_features[1]  # Velocidad promedio
         temporal_consistency = motion_features[12] if len(motion_features) > 12 else 0.0
         smoothness = motion_features[13] if len(motion_features) > 13 else 1.0
-        
-        # Métricas específicas de hombros (nuevas)
-        shoulder_movement = motion_features[20] if len(motion_features) > 20 else 0.0
-        shoulder_symmetry = motion_features[21] if len(motion_features) > 21 else 0.0
-        hand_shoulder_coordination = motion_features[22] if len(motion_features) > 22 else 0.0
         
         if 'static' in sign_type:
             # Para señas estáticas: movimiento mínimo pero consistente
@@ -644,26 +549,7 @@ class LSPDataCollector:
                 quality_score -= 15
                 issues.append("Movimiento entrecortado en seña dinámica")
         
-        # 4. Evaluación específica para señas que involucran expresión corporal
-        expressive_signs = {'GRACIAS', 'POR FAVOR', 'MUCHO GUSTO', 'BUENOS DÍAS', 'BUENAS NOCHES'}
-        current_sign = None
-        
-        # Intentar extraer el nombre de la seña (esto se podría pasar como parámetro)
-        if any(expr_sign.lower() in str(sequence_data).lower() for expr_sign in expressive_signs):
-            # Si es una seña expresiva, evaluar componentes de hombros
-            if shoulder_movement < 0.002:
-                quality_score -= 12
-                issues.append("Falta movimiento de hombros para seña expresiva")
-            
-            if hand_shoulder_coordination < 0.3:
-                quality_score -= 10
-                issues.append("Baja coordinación mano-hombro en seña expresiva")
-            
-            if shoulder_symmetry < 0.6:
-                quality_score -= 8
-                issues.append("Asimetría excesiva en hombros")
-        
-        # 5. Estabilidad inicial y final (crítico para GRU temporal)
+        # 3. Estabilidad inicial y final (crítico para GRU temporal)
         if len(motion_features) > 15:
             start_stability = motion_features[15]
             end_stability = motion_features[16]
@@ -675,14 +561,14 @@ class LSPDataCollector:
                 quality_score -= 12
                 issues.append("Final inestable (afecta contexto temporal)")
         
-        # 6. Coordinación entre manos (importante para GRU bidireccional)
+        # 4. Coordinación entre manos (importante para GRU bidireccional)
         if len(motion_features) > 14:
             hand_coordination = motion_features[14]
             if hand_coordination < 0.3 and 'bilateral' in sign_type:
                 quality_score -= 15
                 issues.append("Baja coordinación entre manos en seña bilateral")
         
-        # 7. Análisis de complejidad gestual
+        # 5. Análisis de complejidad gestual
         if len(motion_features) > 17:
             gesture_complexity = motion_features[17]
             if gesture_complexity > 0.8:
@@ -692,7 +578,7 @@ class LSPDataCollector:
                 quality_score -= 5
                 issues.append("Gesto demasiado simple (falta expresividad)")
         
-        # 8. Evaluación de jerk y aceleración (suavidad para GRU)
+        # 6. Evaluación de jerk y aceleración (suavidad para GRU)
         jerk_avg = motion_features[11] if len(motion_features) > 11 else 0.0
         acceleration_avg = motion_features[6] if len(motion_features) > 6 else 0.0
         
@@ -703,21 +589,15 @@ class LSPDataCollector:
             quality_score -= 8
             issues.append("Aceleraciones excesivas")
         
-        # 9. Bonus por características ideales para GRU
+        # 7. Bonus por características ideales para GRU
         if temporal_consistency > 0.9:
             quality_score += 5  # Bonus por excelente consistencia
         if smoothness > 0.85:
             quality_score += 3  # Bonus por suavidad
         if completeness == 1.0:
             quality_score += 2  # Bonus por datos completos
-        if pose_completeness > 0.95:
-            quality_score += 3  # Bonus por excelentes datos de pose
         
-        # 10. Bonus específico para señas expresivas bien ejecutadas
-        if shoulder_movement > 0.005 and hand_shoulder_coordination > 0.7:
-            quality_score += 4  # Bonus por buena coordinación corporal
-        
-        # 11. Penalización por secuencias muy cortas o largas
+        # 8. Penalización por secuencias muy cortas o largas
         sequence_length = len(sequence_data)
         if sequence_length < 30:
             quality_score -= 15
@@ -731,9 +611,9 @@ class LSPDataCollector:
         
         # Determinar nivel de calidad con criterios más estrictos para GRU
         if quality_score >= 92:
-            quality_level = "EXCELENTE (Óptimo para GRU + Expresiones)"
+            quality_level = "EXCELENTE (Óptimo para GRU)"
         elif quality_score >= 80:
-            quality_level = "BUENA (Aceptable para GRU + Expresiones)"
+            quality_level = "BUENA (Aceptable para GRU)"
         elif quality_score >= 65:
             quality_level = "REGULAR (Requiere mejora para GRU)"
         else:

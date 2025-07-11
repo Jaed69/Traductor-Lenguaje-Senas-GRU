@@ -65,6 +65,13 @@ class MediaPipeManager:
         with self.lock:
             self.latest_pose_results = result
             
+    def process_frame(self, mp_image, timestamp):
+        """Procesa un frame con los landmarkers de MediaPipe."""
+        if self.hand_landmarker:
+            self.hand_landmarker.detect_async(mp_image, timestamp)
+        if self.pose_landmarker:
+            self.pose_landmarker.detect_async(mp_image, timestamp)
+
     def get_current_results(self):
         """Obtiene los últimos resultados de detección"""
         with self.lock:

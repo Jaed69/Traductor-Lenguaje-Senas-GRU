@@ -42,7 +42,7 @@ class FeatureExtractor:
         # Inicializar arrays optimizados para GRU
         hand_data = np.zeros(126)  # 2 manos * 63 features cada una
         pose_data = np.zeros(24)   # 8 puntos clave * 3 coordenadas
-        velocity_data = np.zeros(6)  # Velocidades de manos y pose para GRU temporal
+        velocity_data = np.zeros(6)  # Velocidades base: 2 manos (2 valores) + 4 reserved
         hands_info = {'count': 0, 'handedness': [], 'confidence': []}
 
         # Procesar manos con normalización precisa y cálculo de velocidades
@@ -64,16 +64,21 @@ class FeatureExtractor:
                     hand_data[0:63] = normalized_landmarks
                     # Calcular velocidad de mano derecha (para GRU temporal)
                     if self.prev_right_hand is not None:
-                        velocity_data[0:3] = np.linalg.norm(normalized_landmarks[0:3] - self.prev_right_hand[0:3])
+                        # Calcular velocidad como la norma de la diferencia de las primeras 3 coordenadas (muñeca)
+                        wrist_diff = normalized_landmarks[0:3] - self.prev_right_hand[0:3]
+                        velocity_data[0] = np.linalg.norm(wrist_diff)
                     self.prev_right_hand = normalized_landmarks
                 else:
                     hand_data[63:126] = normalized_landmarks
                     # Calcular velocidad de mano izquierda
                     if self.prev_left_hand is not None:
-                        velocity_data[3:6] = np.linalg.norm(normalized_landmarks[0:3] - self.prev_left_hand[0:3])
+                        # Calcular velocidad como la norma de la diferencia de las primeras 3 coordenadas (muñeca)
+                        wrist_diff = normalized_landmarks[0:3] - self.prev_left_hand[0:3]
+                        velocity_data[3] = np.linalg.norm(wrist_diff)
                     self.prev_left_hand = normalized_landmarks
 
         # Procesar pose (solo puntos relevantes para lenguaje de señas)
+        pose_velocity = 0.0  # Inicializar velocidad de pose
         if pose_results and pose_results.pose_landmarks:
             relevant_indices = [11, 12, 13, 14, 15, 16, 23, 24]  # Puntos clave del torso y brazos
             all_pose_landmarks = pose_results.pose_landmarks[0]
@@ -90,17 +95,31 @@ class FeatureExtractor:
                 # Calcular velocidad de pose para información temporal
                 if self.prev_pose is not None:
                     pose_velocity = np.linalg.norm(pose_data - self.prev_pose)
-                    velocity_data = np.append(velocity_data, pose_velocity)
-                else:
-                    velocity_data = np.append(velocity_data, 0.0)
                 self.prev_pose = pose_data
 
-        # Combinar features optimizadas para GRU
+        # Asegurar tamaño consistente añadiendo velocidad de pose a velocity_data
+        velocity_data = np.append(velocity_data, pose_velocity)
+        
+        # Combinar features optimizadas para GRU - tamaño fijo garantizado
         combined_features = np.concatenate([hand_data, pose_data, velocity_data])
         
         # Aplicar normalización si está habilitada
         if self.feature_normalization:
             combined_features = self._normalize_features_for_gru(combined_features)
+        
+        # Validar tamaño final esperado
+        expected_size = 157  # 126 + 24 + 7
+        if len(combined_features) != expected_size:
+            print(f"⚠️ Warning: Tamaño de features inconsistente: {len(combined_features)}, esperado: {expected_size}")
+            # Asegurar tamaño correcto
+            if len(combined_features) < expected_size:
+                # Rellenar con zeros
+                padded_features = np.zeros(expected_size)
+                padded_features[:len(combined_features)] = combined_features
+                combined_features = padded_features
+            else:
+                # Truncar
+                combined_features = combined_features[:expected_size]
         
         return combined_features, hands_info
 

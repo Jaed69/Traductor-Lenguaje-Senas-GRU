@@ -1,53 +1,85 @@
 # ===================================================================
-# 🚀 Proyecto LSP - Requerimientos Modernizados (Julio 2025)
-# Para la última API de Tareas de MediaPipe y Python 3.11+
+# 🚀 Sistema LSP v2.0 - Lenguaje de Señas Peruano
+# Requerimientos actualizados para Python 3.11+ (Diciembre 2024)
 #
-# Instrucciones:
-# 1. Crea un entorno virtual: python -m venv venv
-# 2. Actívalo: source venv/bin/activate (o venv\Scripts\activate)
-# 3. Instala todo con: pip install -r requirements.txt
+# Nuevas características v2.0:
+# ✅ Data Augmentation inteligente
+# ✅ Dashboard de progreso avanzado  
+# ✅ Descarga automática de modelos MediaPipe
+# ✅ Formato Keras/TensorFlow nativo
+# ✅ Sistema de estadísticas completo
+#
+# Instalación:
+# 1. python -m venv venv
+# 2. source venv/bin/activate (Linux/macOS) o venv\Scripts\activate (Windows)
+# 3. pip install -r requirements.txt
+# 4. python run.py
 # ===================================================================
 
-# -- Core ML & Visión por Computadora --
-# La base de tu proyecto.
+# -- Machine Learning Core --
+# TensorFlow/Keras para entrenamiento de GRU bidireccional
+tensorflow>=2.13.0,<3.0
 
-# Esencial para la nueva API de Tareas. Usamos '>=0.10.11' para obtener
-# las últimas mejoras, pero puedes fijarla a una versión más nueva si lo prefieres.
+# MediaPipe para detección de landmarks en tiempo real
 mediapipe>=0.10.11
 
-# Indispensable para la captura de cámara y manipulación de imágenes.
-opencv-python>=4.9.0
+# OpenCV para procesamiento de video y cámara
+opencv-python>=4.8.0
 
-# -- Data Science & Machine Learning (Opcional si no entrenas modelos aquí) --
-# Mantén estas si tu script también pre-procesa datos o entrena.
+# -- Computación Científica --
+# NumPy para operaciones numéricas fundamentales
+numpy>=1.24.0,<2.0
 
-# Biblioteca fundamental para operaciones numéricas.
-numpy>=1.24.3
+# SciPy para algoritmos científicos avanzados
+scipy>=1.10.0
 
-# Útil para el pre-procesamiento de los datos recolectados.
-scikit-learn>=1.3.2
+# Scikit-learn para métricas y preprocessing
+scikit-learn>=1.3.0
 
-# Si guardas tus modelos o datasets en formato HDF5.
+# -- Data Management --
+# HDF5 para almacenamiento eficiente de datasets
 h5py>=3.9.0
 
-# -- Utilidades y Experiencia de Usuario --
-# Librerías que mejoran la interacción y la visualización.
+# Pandas para manipulación de metadatos
+pandas>=2.0.0
 
-# Para visualizar datos o resultados.
-matplotlib>=3.7.5
+# -- Visualización y UI --
+# Matplotlib para gráficos y visualizaciones
+matplotlib>=3.7.0
 
-# Para mostrar barras de progreso elegantes durante la recolección.
+# Seaborn para visualizaciones estadísticas avanzadas
+seaborn>=0.12.0
+
+# -- Utilidades del Sistema --
+# TQDM para barras de progreso elegantes
 tqdm>=4.65.0
 
-# Para añadir color a los mensajes en la terminal.
+# Colorama para output colorizado en terminal
 colorama>=0.4.6
 
-# -- NOTA SOBRE TENSORFLOW --
-# La librería 'mediapipe' ya incluye el runtime de TensorFlow Lite
-# necesario para la inferencia. NO necesitas instalar el paquete
-# completo de 'tensorflow' a menos que vayas a ENTRENAR modelos
-# en este mismo entorno. Si lo necesitas, descomenta la siguiente línea:
-# tensorflow>=2.13.0
+# Requests para descarga automática de modelos
+requests>=2.31.0
+
+# -- Data Augmentation Dependencies --
+# Pillow para procesamiento de imágenes adicional
+Pillow>=10.0.0
+
+# Joblib para procesamiento paralelo en augmentación
+joblib>=1.3.0
+
+# -- Development & Testing (Opcional) --
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+# black>=23.0.0
+# flake8>=6.0.0
+# mypy>=1.5.0
+
+# -- Configuración y Logging --
+# PyYAML para archivos de configuración
+PyYAML>=6.0.0
+
+# Rich para output terminal mejorado (opcional)
+rich>=13.5.0
 
 # -- Análisis de Señales para GRU Optimizado --
 # Biblioteca científica para análisis de periodicidad y autocorrelación.
